@@ -64,6 +64,16 @@ INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie');
 Insert into Patient values (5,2345,NULL,1,'Ccaleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
 INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
 
-
+--Contraintes C1_AgeInclusion
+CREATE OR REPLACE TRIGGER check_Age_Inclusion
+BEFORE INSERT 
+ON Patient 
+FOR EACH ROW 
+BEGIN 
+    IF :NEW.DateDeNaissance > TO_DATE('01/01/2008','DD-MM-YYYY') or :NEW.DateDeNaissance < TO_DATE('01/01/1961','DD-MM-YYYY') THEN
+    RAISE_APPLICATION_ERROR(-20001, 'L''age du patient ne respecte pas les critères d''inclusions');
+    END IF;
+END;
+/
 
 COMMIT;
