@@ -1,0 +1,69 @@
+-- C3_PathoExcluante
+CREATE OR REPLACE TRIGGER check_Patho_Excluante 
+BEFORE INSERT OR UPDATE --avant d'inserer un patient dans la table patient 
+ON PATHOLOGIE  
+FOR EACH ROW 
+BEGIN 
+    IF :New.Nom_Patho = 'Peste' OR :New.Nom_Patho = 'Rage' OR :New.Nom_Patho = 'Choléra' THEN  --option2 :  IF :NEW.Nom_Patho IN ('Peste', 'Rage', 'Coléra') THEN
+    :NEW.Excluante := 'oui';
+    RAISE_APPLICATION_ERROR(-20001, 'La maladie saisit est excluante, le patient ne peu pas être pris dans l''étude');
+    END IF;
+END;
+/
+--test pathologie excluante 
+insert into PATHOLOGIE VALUES ('Peste', 'oui'); -- l'attribut Excluante n'est pas pertinante, revoir le domain  
+insert into PATHOLOGIE VALUES ('Diabète', 'non');
+select * from PATHOLOGIE;
+--drop trigger check_Patho_Excluante
+
+
+-------------
+--C2_EtatPhysique
+CREATE OR REPLACE TRIGGER check_IMC
+BEFORE INSERT 
+ON PATIENT
+FOR EACH ROW
+BEGIN
+    IF (:New.POIDS / ((:NEW.TAILLE / 100) * (:NEW.TAILLE/ 100))) NOT between 18.5 AND 40 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'L''état de forme du patient ne lui permet pas d''intégrer l''étude');
+    END IF;
+end;
+/
+--trigger uptade de patient après la saisit de son dossier
+CREATE OR REPLACE TRIGGER trg_uptadePatient_AprèsSaisitDossier
+AFTER INSERT 
+ON DOSSIER
+FOR EACH ROW 
+BEGIN
+    UPDATE PATIENT 
+    SET LIGNE_DOSSIER = :NEW.LIGNE_DOSSIER
+    WHERE ID_PATIENT = :NEW.ID_PATIENT;
+END;
+/
+
+-- Test ajout patient 
+
+Insert into centre values (1);
+
+Insert into personnel values (1,1,NULL,'François','Medecin');
+
+Update personnel set NUM_ADELI=2345 where ID_PERSO=1 ;
+
+Insert into perso_med values (2345,1,'Medecin',NULL);
+
+Insert into Patient values (1,2345,NULL,1,'Brice','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
+
+Insert into Patient values (3,2345,NULL,1,'Antoisse','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),160,130,30,'H','VP',1); -- test IMC ne doit pas fonctionner 
+Insert into Patient values (3,2345,NULL,1,'Antoisse','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
+
+
+--test mise a jour dossier patient antoisse
+Insert into Patient values (4,2345,NULL,1,'Caleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
+INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie'); 
+
+Insert into Patient values (5,2345,NULL,1,'Ccaleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
+INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
+
+
+
+COMMIT;
