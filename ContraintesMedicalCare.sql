@@ -109,3 +109,16 @@ END;
 /
 
 COMMIT;
+
+
+--trigger qui empêche d'enregistrer un patient dans plus d'un centre
+CREATE OR REPLACE TRIGGER BU_PATIENT_CENTRE_FIXE
+BEFORE UPDATE OF ID_CENTRE ON PATIENT
+FOR EACH ROW
+BEGIN
+  IF :OLD.ID_CENTRE IS NOT NULL AND :NEW.ID_CENTRE <> :OLD.ID_CENTRE THEN -- si l'ancien ID_Centre n'est pas null et que le nouveau ID_centre diffère de l'ancien 
+    RAISE_APPLICATION_ERROR(-20021,'Un patient déjà affecté à un centre ne peut pas être transféré dans un autre centre'); -- on refuse car le patient ne peut pas changer de centre au cours de l'étude
+  END IF;
+END;
+/
+COMMIT;
