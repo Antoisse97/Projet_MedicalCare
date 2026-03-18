@@ -102,12 +102,25 @@ BEGIN
         v_base :=5000;
     ELSE 
         v_base := 9000; --valeur default
+        RAISE_APPLICATION_ERROR(-20010, 'Le role saisit est inconu');
     END IF; 
 -- calcul du num adeli 
     :NEW.NUM_ADELI := v_base + :NEW.ID_PERSO;
 END;
 /
+----------------------------------------------
+--trigger uptade numéro adéli  -> Perso_Med après la saisit d'un Personnel
+CREATE OR REPLACE TRIGGER trg_uptadePerso_Med_aprèsSaisitPersonnel
+AFTER INSERT 
+ON PERSONNEL 
+FOR EACH ROW 
+BEGIN 
+    UPDATE PERSO_MED 
+    SET Num_Adeli = :NEW.Num_Adeli
+    WHERE Id_Perso = :NEW.Id_Perso;
+END; 
 
+-- prêt pour être testé 
 COMMIT;
 
 
@@ -122,3 +135,4 @@ BEGIN
 END;
 /
 COMMIT;
+-- test 
