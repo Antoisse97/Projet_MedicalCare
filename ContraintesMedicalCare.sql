@@ -125,7 +125,7 @@ COMMIT;
 
 
 --trigger qui empêche d'enregistrer un patient dans plus d'un centre
-CREATE OR REPLACE TRIGGER BU_PATIENT_CENTRE_FIXE
+CREATE OR REPLACE TRIGGER CHECK_PATIENT_CENTRE_FIXE
 BEFORE UPDATE OF ID_CENTRE ON PATIENT
 FOR EACH ROW
 BEGIN
@@ -136,3 +136,34 @@ END;
 /
 COMMIT;
 -- test 
+
+-- Trigger qui vérifie si le patient est dans le même centre que son médécin référent
+CREATE OR REPLACE TRIGGER CHECK_MED_PATIENT_CENTRE
+BEFORE INSERT OR UPDATE OF ID_CENTRE, NUM_ADELI ON PATIENT -- avant l'insertion d'un patient dans la table patient, on vérifie le couple d'attrinut Id_centre et Num_Adeli
+FOR EACH ROW
+DECLARE
+  est_present NUMBER;
+BEGIN
+  -- Ne tester que si les valeurs du médécin et du centre ont été renseigné
+  IF :NEW.NUM_ADELI IS NOT NULL AND :NEW.ID_CENTRE IS NOT NULL THEN
+
+    -- On vérifie que le médecin référent est bien rattaché à ce centre
+    SELECT COUNT(*)
+      INTO est_present
+      FROM PERSO_MED pm
+           JOIN PERSONNEL p
+             ON pm.ID_PERSO = p.ID_PERSO
+     WHERE pm.NUM_ADELI = :NEW.NUM_ADELI
+       AND p.ID_CENTRE   = :NEW.ID_CENTRE;
+
+    IF est_present = 0 THEN
+      RAISE_APPLICATION_ERROR(
+        -20040,
+        'Le médecin référent n''est pas rattaché au centre du patient : affectation refusée'
+      );
+    END IF;
+  END IF;
+END;
+/
+COMMIT
+-- Pour le test on est censé avoir une non insertion du nouveau patient avec le message d'erreur: 'Le médecin référent n'est pas rattaché au centre du patient : affectation refusée'
