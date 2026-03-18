@@ -44,13 +44,9 @@ END;
 -- Test ajout patient 
 
 Insert into centre values (1);
-
 Insert into personnel values (1,1,NULL,'François','Medecin');
-
 Update personnel set NUM_ADELI=2345 where ID_PERSO=1 ;
-
 Insert into perso_med values (2345,1,'Medecin',NULL);
-
 Insert into Patient values (1,2345,NULL,1,'Brice','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
 
 Insert into Patient values (3,2345,NULL,1,'Antoisse','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),160,130,30,'H','VP',1); -- test IMC ne doit pas fonctionner 
@@ -134,8 +130,16 @@ BEGIN
   END IF;
 END;
 /
-COMMIT;
 -- test 
+-- insertion d'un patient dans un centre
+Insert into centre values (2);
+Insert into Patient values (5,2345,NULL,1,'Brauwn','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
+INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
+-- insertion du même patient dans un autre centre (ici centre 2) 
+Update PATIENT set ID_CENTRE = 2 where ID_PATIENT=5 ; -- fonctionne  
+-- Validé
+COMMIT;
+
 
 -- Trigger qui vérifie si le patient est dans le même centre que son médécin référent
 CREATE OR REPLACE TRIGGER CHECK_MED_PATIENT_CENTRE
@@ -150,7 +154,7 @@ BEGIN
     -- On vérifie que le médecin référent est bien rattaché à ce centre
     SELECT COUNT(*)
       INTO est_present
-      FROM PERSO_MED pm
+      FROM PERSO_MED pm --varible utilisé pour les joins
            JOIN PERSONNEL p
              ON pm.ID_PERSO = p.ID_PERSO
      WHERE pm.NUM_ADELI = :NEW.NUM_ADELI
