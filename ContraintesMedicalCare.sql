@@ -115,7 +115,7 @@ BEGIN
     SET Num_Adeli = :NEW.Num_Adeli
     WHERE Id_Perso = :NEW.Id_Perso;
 END; 
-
+/
 -- prêt pour être testé 
 COMMIT;
 
@@ -130,6 +130,9 @@ BEGIN
   END IF;
 END;
 /
+
+COMMIT;
+
 -- test 
 -- insertion d'un patient dans un centre
 Insert into centre values (2);
@@ -148,7 +151,7 @@ FOR EACH ROW
 DECLARE
   est_present NUMBER;
 BEGIN
-  -- Ne tester que si les valeurs du médécin et du centre ont été renseigné
+  -- Ne faire le test que si les valeurs du médécin et du centre ont été renseigné
   IF :NEW.NUM_ADELI IS NOT NULL AND :NEW.ID_CENTRE IS NOT NULL THEN
 
     -- On vérifie que le médecin référent est bien rattaché à ce centre
@@ -171,3 +174,25 @@ END;
 /
 COMMIT
 -- Pour le test on est censé avoir une non insertion du nouveau patient avec le message d'erreur: 'Le médecin référent n'est pas rattaché au centre du patient : affectation refusée'
+
+-- Tester l'insertion d'une fiche quotidienne
+-- Trigger pour éviter d'avoir un doublon de fiche pour le même patient dans la même journée
+CREATE OR REPLACE TRIGGER CHECK_UNE_FICHE_JOUR_PAR_PATIENT
+BEFORE INSERT ON FICHE_QUOTIDIENNE -- vérifie chaque insertion de fiche quotidienne
+FOR EACH ROW 
+DECLARE
+  deja_enregistre NUMBER;-- compteur servant de variable de recherche
+BEGIN
+    IF :NEW.ID_PATIENT IS NOT NULL AND :NEW.DATEJ IS NOT NULL THEN 
+        SELECT COUNT(*)INTO deja_enregistre FROM FICHE_QUOTIDIENNE WHERE ID_PATIENT = :NEW.ID_PATIENT AND DATEJ = :NEW.DATEJ; -- on cherche la présence dans la table Fiche_quotidienne d'une fiche quotidienne appartenant au patient qu'on veut ajouter
+        IF deja_enregistre > 0 THEN -- Si ce patient possède déjà une fiche quotidienne pour le même jour on le refuse
+              RAISE_APPLICATION_ERROR(-20040,'Une fiche quotidienne (pour ce jour) existe déjà pour ce patient : affectation refusée');
+        END IF;
+    END IF;
+END;
+/
+COMMIT
+-- Pour le test control => doit accepter l'enregistrement de la fiche quotidienne d'un patient qui n'avait aucune fiche à un date donné, accepte aussi l'enregistrement d'une fiche pour le même patient mais pour une date differente
+-- Doit refuser l'enregistrement d'un patient pour lequel on avait deja enregistré une fiche à la meme date , donc pas de 2nde fiche pour le meme patient le même jour
+-- Changement de nom de la colonne Num J car cette colonne correspond plutôt au numéro unique de chaque fiche quotidienne
+ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
