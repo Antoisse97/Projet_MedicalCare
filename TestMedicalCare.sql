@@ -48,3 +48,26 @@ INSERT INTO DOSSIER VALUES (7, 7, 'Neurochirurgie');
 
 ---- 24 Mars 2026
 
+-- Test du trigger trg_adeli_medecin (Codé par A, testé par C le 24/03/2026)
+-- Insertion des personnels médicales selon leur rôle
+INSERT INTO PERSONNEL VALUES (3,1,NULL,'Paul','Medecin') ;
+INSERT INTO PERSONNEL VALUES (4,1,NULL,'Julie','Infirmiere');
+INSERT INTO PERSONNEL VALUES (5,1,NULL,'Marthe','Cardiologue');
+INSERT INTO PERSONNEL VALUES (6,1,NULL,'Jean','KINE');
+INSERT INTO PERSONNEL VALUES (7,1,NULL,'Karl','Biologiste');
+INSERT INTO PERSONNEL VALUES (8,1,NULL,'Brice','ARC');
+-- Le numéro adeli doit être mis à jour automatique selon la logique du métier concerné// Résultat attendu : RA et Résultat obtenu : RO
+-- Pour le médécin 
+INSERT INTO PERSO_MED VALUES (3,3,'Medecin',NULL); -- (RA :1000 + ID perso donc => 1003)(RO: 1003 => Validé)
+-- Pour l'Infirmiere 
+INSERT INTO PERSO_MED VALUES (4,4,'Infirmiere',NULL); -- (RA :2000 + ID perso donc => 2004)(RO: 2003 => Validé)
+-- Pour le Cardiologue 
+INSERT INTO PERSO_MED VALUES (5,5,'Cardiologue',NULL); -- (RA :3000 + ID perso donc => 3005)(RO: 3005 => Validé)
+-- Pour le Kiné 
+INSERT INTO PERSO_MED VALUES (6,6,'KINE',NULL); -- (RA :4000 + ID perso donc => 4006)(RO: 4006 => Validé)
+-- Pour le Biologiste 
+INSERT INTO PERSO_MED VALUES (7,7,'Biologiste',NULL); -- (RA :5000 + ID perso donc => 5007)(RO: 5007 => Validé)
+-- Test pour l'arc normalement cela lève une erreur car il ne peut pas avoir de num adeli
+INSERT INTO PERSO_MED VALUES (8,8,'ARC',NULL); -- (RA :Message d'erreur "Le rôle saisit est inconnu" => Pas de mise à jour ni d'insertion)(RO: Pas d'insertion + message d'erreur => Validé)
+COMMIT; 
+/
