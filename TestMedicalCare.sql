@@ -45,3 +45,6 @@ INSERT INTO DOSSIER VALUES (6, 6, 'Neurochirurgie');
 -- insertion du patient crash test 
 Insert into Patient values (7,1005,NULL,1,'Zozo','Aucun', TO_DATE('05-03-2002','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
 INSERT INTO DOSSIER VALUES (7, 7, 'Neurochirurgie'); 
+
+---- 24 Mars 2026
+

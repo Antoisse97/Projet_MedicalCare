@@ -196,3 +196,6 @@ COMMIT
 -- Doit refuser l'enregistrement d'un patient pour lequel on avait deja enregistré une fiche à la meme date , donc pas de 2nde fiche pour le meme patient le même jour
 -- Changement de nom de la colonne Num J car cette colonne correspond plutôt au numéro unique de chaque fiche quotidienne
 ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
+
+---- 24 Mars 2026
+
