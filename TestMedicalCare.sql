@@ -47,6 +47,9 @@ Insert into Patient values (7,1005,NULL,1,'Zozo','Aucun', TO_DATE('05-03-2002','
 INSERT INTO DOSSIER VALUES (7, 7, 'Neurochirurgie'); 
 
 ---- 24 Mars 2026
+-- test fiche quotidienne d'un patient 
+insert into FICHE_QUOTIDIENNE VALUES (1,5,22,10,80,180,190,37,'le patient se porte bien et répond bien au medicament', 'le patient est ok', to_date('24-03-2026','DD-MM-YYYY')); -- doit fonctionner
+insert into FICHE_QUOTIDIENNE VALUES (1,5,22,10,80,180,190,37,'le patient est malade', 'le patient n''est pas ok', to_date('24-03-2026','DD-MM-YYYY')); -- ne doit pas fonctionner
 
 -- Test du trigger trg_adeli_medecin (Codé par A, testé par C le 24/03/2026)
 -- Insertion des personnels médicales selon leur rôle
@@ -71,3 +74,17 @@ INSERT INTO PERSO_MED VALUES (7,7,'Biologiste',NULL); -- (RA :5000 + ID perso do
 INSERT INTO PERSO_MED VALUES (8,8,'ARC',NULL); -- (RA :Message d'erreur "Le rôle saisit est inconnu" => Pas de mise à jour ni d'insertion)(RO: Pas d'insertion + message d'erreur => Validé)
 COMMIT; 
 /
+
+---- 25 Mars 2026
+
+ALTER TABLE FICHE_EXAM RENAME COLUMN NUMJ TO NUM_F; -- petite modification pour la cohérence entre les tables
+-- Test du trigger trg_ExamCoherentAvecJour (contrainte de cohérence des dates de la fiche quotidienne) 
+-- Résultat attendu : RA et Résultat obtenu : RO
+-- Test avec des dates pas cohérentes (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 alors que la date de prescriotion qu'on a renseigné ici est différente)
+INSERT INTO FICHE_EXAM VALUES (1,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('20-03-2026','DD-MM-YYYY'),1,TO_DATE ('20-03-2026','DD-MM-YYYY')); -- (RA :Message d'erreur disant que les ne sont pas cohérentes)(RO: La date du jour n'est pas cohérente avec les dates de prescription et de réalisation => Validé)
+-- Test avec une date incohérente (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 est même date de prescription de la fiche exam mais la date de réalisation est inférieur à celle de prescription (c'est pas cohérent))
+INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19-03-2026','DD-MM-YYYY'),1,TO_DATE ('18-03-2026','DD-MM-YYYY')); -- (RA :Message d'erreur disant que les ne sont pas cohérentes)(RO: La date du jour n'est pas cohérente avec les dates de prescription et de réalisation => Validé)
+-- Test avec des dates cohérentes (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 et la date de prescriotion qu'on a renseigné ici est la même)
+INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19-03-2026','DD-MM-YYYY'),1,TO_DATE ('20-03-2026','DD-MM-YYYY')); -- (RA :Insertion validée)(RO: 1 ligne inséré => Validé)
+-- Trigger validé // Testé par C
+COMMIT; 
