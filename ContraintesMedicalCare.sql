@@ -200,7 +200,7 @@ ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
 ---- 24 Mars 2026
 --trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (NUMJ) 
 
-<<<<<<< HEAD
+--<<<<<<< HEAD
 
 =======
 CREATE OR REPLACE TRIGGER trg_ExamCoherentAvecJour
@@ -213,11 +213,11 @@ BEGIN
     SELECT DATEJ
     INTO   v_datej
     FROM   FICHE_QUOTIDIENNE
-    WHERE  ID_PATIENT = :NEW.ID_PATIENT;
+    WHERE  NUM_F = :NEW.NUM_F; -- 
 
     -- 2) Comparaison des dates
     IF :NEW.DATEPRESCRIPTION <> v_datej
-       OR :NEW.DATEREALISATION > v_datej
+       OR :NEW.DATEREALISATION < v_datej 
     THEN
         RAISE_APPLICATION_ERROR(
           -20001,
@@ -228,4 +228,4 @@ END;
 /
 
 commit
->>>>>>> 5fcf9159ee8fe16a640d43313f8bde4f8df8c371
+-->>>>>>> 5fcf9159ee8fe16a640d43313f8bde4f8df8c371
