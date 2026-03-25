@@ -198,4 +198,34 @@ COMMIT
 ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
 
 ---- 24 Mars 2026
+--trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (NUMJ) 
 
+<<<<<<< HEAD
+
+=======
+CREATE OR REPLACE TRIGGER trg_ExamCoherentAvecJour
+BEFORE INSERT ON FICHE_EXAM
+FOR EACH ROW
+DECLARE
+    v_datej FICHE_QUOTIDIENNE.DATEJ%TYPE;
+BEGIN
+    -- 1) Récupération de la date dans la table FICHE_QUOTIDIENNE
+    SELECT DATEJ
+    INTO   v_datej
+    FROM   FICHE_QUOTIDIENNE
+    WHERE  ID_PATIENT = :NEW.ID_PATIENT;
+
+    -- 2) Comparaison des dates
+    IF :NEW.DATEPRESCRIPTION <> v_datej
+       OR :NEW.DATEREALISATION > v_datej
+    THEN
+        RAISE_APPLICATION_ERROR(
+          -20001,
+          'La date du jour n''est pas cohérente avec les dates de prescription et de réalisation'
+        );
+    END IF;
+END;
+/
+
+commit
+>>>>>>> 5fcf9159ee8fe16a640d43313f8bde4f8df8c371
