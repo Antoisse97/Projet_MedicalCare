@@ -72,6 +72,26 @@ BEGIN
 END;
 /
 
+--
+CREATE OR REPLACE TRIGGER check_Age_Inclusion
+BEFORE INSERT ON PATIENT
+FOR EACH ROW
+DECLARE
+  v_age NUMBER;
+BEGIN
+  -- calcul de l'âge en années révolues à la date d'inclusion
+  v_age := TRUNC( MONTHS_BETWEEN(SYSDATE, :NEW.DateDeNaissance) / 12 );
+
+  IF v_age < 18 OR v_age > 65 THEN
+    RAISE_APPLICATION_ERROR(
+      -20001,
+      'L''âge du patient ne respecte pas les critères d''inclusion'
+    );
+  END IF;
+END;
+/
+COMMIT;
+
 --numéros adéli 
 CREATE OR REPLACE TRIGGER trg_adeli_medecin
 BEFORE INSERT ON PERSO_MED
