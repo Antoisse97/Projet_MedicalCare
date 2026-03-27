@@ -77,4 +77,21 @@ BEGIN
     :NEW.NUMLOTS := v_numJour * 1000 + :NEW.ID_PATIENT;
 END;
 /
+
+-- 27 Mars 2026
+--Mise en place du cadre d'étude par création de centre, du personnel : Centre, Personnel, Perso_Med
+-- P1_PeuplementDebut
+CREATE OR REPLACE PROCEDURE PeupleCentre(n in number) as 
+BEGIN
+    COMMIT;
+    DELETE FROM Centre;
+    FOR I IN 1..n LOOP
+        INSERT INTO CENTRE(ID_CENTRE)
+        VALUES (i);
+    END LOOP;
+END;
+/
+--call
+call PeupleCentre(5);
+SELECT * FROM CENTRE;
 commit
