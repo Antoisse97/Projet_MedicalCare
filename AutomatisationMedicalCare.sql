@@ -95,3 +95,47 @@ END;
 call PeupleCentre(5);
 SELECT * FROM CENTRE;
 commit
+
+--01 Avril 2026
+-- Automatisation de la numérotation des tables dont l'identifiant peut être numéroté automatiquement à partir de 1 : 
+-- creation d'une sequence de numérotation automatique
+create sequence NumerotationAutoSeq 
+    start with 1 increment by 1; -- Commence la numérotation à 1 mais pour tester on peut modifier le chiffre de départ
+    
+-- Trigger d'automatisation de la numérotation du patient 
+create or replace trigger trg_PatientAutoNum
+before insert on Patient
+for each row
+begin 
+    select NumerotationAutoSeq.nextval into :NEW.Id_Patient from dual; -- Insert la valeur à partir de la séquence de numérotation
+end; 
+-- Pour tester il faut mettre un null à l'emplacement de Id_Patient
+
+-- Petit test
+Insert into Patient values (NULL,1002,NULL,2,'Nathan','Aucun', TO_DATE('05-03-2005','DD-MM-YYYY'),60,180,30,'H','VP',2); 
+Insert into Patient values (NULL,1002,NULL,2,'Vroum','Aucun', TO_DATE('05-03-2005','DD-MM-YYYY'),60,180,30,'H','VP',2); 
+
+drop sequence NumerotationAutoSeq;
+
+-- Trigger d'automatisation de la numérotation du centre 
+create or replace trigger trg_CentreAutoNum
+before insert on Centre
+for each row
+begin 
+    select NumerotationAutoSeq.nextval into :NEW.Id_Centre from dual; -- Insert la valeur à partir de la séquence de numérotation
+end; 
+-- Pour tester il faut mettre un null à l'emplacement de Id_Centre
+
+Insert into centre values (Null);
+
+-- Trigger d'automatisation de la numérotation du Personnel 
+create or replace trigger trg_PersonnelAutoNum
+before insert on Personnel
+for each row
+begin 
+    select NumerotationAutoSeq.nextval into :NEW.Id_Perso from dual; -- Insert la valeur à partir de la séquence de numérotation
+end; 
+-- Pour tester il faut mettre un null à l'emplacement de Id_Perso
+/
+commit;
+
