@@ -96,9 +96,10 @@ call PeupleCentre(5);
 SELECT * FROM CENTRE;
 commit
 
+---------------------------------------------------------------------------------------------------------------------------------
 --01 Avril 2026 (Développé par C)
 -- Automatisation de la numérotation des tables dont l'identifiant peut être numéroté automatiquement à partir de 1 : 
--- creation d'une sequence de numérotation automatique pour le patient
+-- creation d'une sequence de numérotation automatique pour le patient-------------------------------------------------
 create sequence NumerotationPatientSeq 
     start with 1 increment by 1; -- Commence la numérotation à 1 mais pour tester on peut modifier le chiffre de départ
     
@@ -108,10 +109,10 @@ create sequence NumerotationCentreSeq
 
 -- creation d'une sequence de numérotation automatique pour le personnel
 create sequence NumerotationPersonnelSeq
-    start with 11 increment by 1;
-
-
--- Trigger d'automatisation de la numérotation du patient 
+    start with 1 increment by 1;
+    
+drop sequence NumerotationPersonnelSeq;
+----------------------------Trigger d'automatisation de la numérotation du patient----------------------------------------------
 create or replace trigger trg_PatientAutoNum
 before insert on Patient
 for each row
@@ -119,12 +120,6 @@ begin
     select NumerotationPatientSeq.nextval into :NEW.Id_Patient from dual; -- Insert la valeur à partir de la séquence de numérotation
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Patient
-
--- Petit test
-Insert into Patient values (NULL,1002,NULL,2,'Nathan','Aucun', TO_DATE('05-03-2005','DD-MM-YYYY'),60,180,30,'H','VP',2); 
-Insert into Patient values (NULL,1002,NULL,2,'Vroum','Aucun', TO_DATE('05-03-2005','DD-MM-YYYY'),60,180,30,'H','VP',2); 
-
-drop sequence NumerotationAutoSeq;
 
 -- Trigger d'automatisation de la numérotation du centre 
 create or replace trigger trg_CentreAutoNum
@@ -134,8 +129,6 @@ begin
     select NumerotationCentreSeq.nextval into :NEW.Id_Centre from dual; -- Insert la valeur à partir de la séquence de numérotation
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Centre
-
-Insert into centre values (Null);
 
 -- Trigger d'automatisation de la numérotation du Personnel 
 create or replace trigger trg_PersonnelAutoNum
@@ -148,68 +141,75 @@ end;
 /
 commit;
 
+---------------------------------------------------------------------------------------------------------------------------------
 -- 03 Avril 2026
--- Procédure de peuplement du personnel (développé par C)
+-----------------------------------Procédure de peuplement du personnel (développé par C)----------------------------------------
 CREATE OR REPLACE PROCEDURE PeuplePersonnel (np IN NUMBER) AS
-    TYPE t_roles IS VARRAY(6) OF VARCHAR2(30); -- tableau de valeurs pour le role
-    v_roles t_roles := t_roles('Medecin', 'Infirmier', 'ARC', 'KINE', 'Cardiologue', 'Biologiste');
+  TYPE t_roles IS VARRAY(7) OF VARCHAR2(30);
+  v_roles t_roles := t_roles('Medecin', 'Infirmiere', 'ARC', 'KINE', 'Cardiologue', 'Biologiste','Data-Manager');
 
-    TYPE t_centres IS VARRAY(4) OF NUMBER; -- tableau de valeurs pour le centre
-    v_centres t_centres := t_centres(1, 2, 3, 4);
+  TYPE t_centres IS VARRAY(4) OF NUMBER;
+  v_centres t_centres := t_centres(1, 2, 3, 4);
 
-    TYPE t_identites IS VARRAY(20) OF VARCHAR2(50); -- tableau de valeurs pour les identites
-    v_identites t_identites := t_identites(
-      'Martin Nathan',
-      'Dubois Emma',
-      'Bernard Lucas',
-      'Thomas Chloé',
-      'Robert Hugo',
-      'Richard Inès',
-      'Petit Adam',
-      'Durand Léa',
-      'Leroy Noah',
-      'Moreau Manon',
-      'Simon Louis',
-      'Laurent Sarah',
-      'Lefebvre Jules',
-      'Michel Clara',
-      'Garcia Tom',
-      'David Camille',
-      'Bertrand Lina',
-      'Roux Maxime',
-      'Vincent Zoé',
-      'Fournier Aymeric'
-    );
+  TYPE t_identites IS VARRAY(20) OF VARCHAR2(50);
+  v_identites t_identites := t_identites(
+    'Martin Nathan','Dubois Emma','Bernard Lucas','Thomas Chloé',
+    'Robert Hugo','Richard Inès','Petit Adam','Durand Léa',
+    'Leroy Noah','Moreau Manon','Simon Louis','Laurent Sarah',
+    'Lefebvre Jules','Michel Clara','Garcia Tom','David Camille',
+    'Bertrand Lina','Roux Maxime','Vincent Zoé','Fournier Aymeric'
+  );
 
-    v_idCentre    NUMBER; 
-    v_sonIdentite VARCHAR2(50);
-    v_metier      VARCHAR2(30);
-    v_index       PLS_INTEGER;
+  v_idCentre    NUMBER;
+  v_sonIdentite VARCHAR2(50);
+  v_metier      VARCHAR2(30);
+  v_index       PLS_INTEGER;
+  v_nb_arc_centre NUMBER;
 BEGIN
-    FOR i IN 1..np LOOP -- Boucle 
-        v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_centres.COUNT + 1)); -- on choisit une valeur au hasard
-        v_idCentre := v_centres(v_index);
+  FOR i IN 1 .. np LOOP
+    -- centre aléatoire
+    v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_centres.COUNT + 1));
+    v_idCentre := v_centres(v_index);
 
-        v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_identites.COUNT + 1)); -- on choisit une valeur au hasard
-        v_sonIdentite := v_identites(v_index);
+    -- identité aléatoire
+    v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_identites.COUNT + 1));
+    v_sonIdentite := v_identites(v_index);
 
-        v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_roles.COUNT + 1)); -- on choisit une valeur au hasard
-        v_metier := v_roles(v_index);
+    -- rôle aléatoire
+    v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_roles.COUNT + 1));
+    v_metier := v_roles(v_index);
+    
+    -- si le rôle tiré est ARC ou Data-Manager, vérifier unicité dans ce centre
+    IF v_metier IN ('ARC', 'Data-Manager') THEN
+      SELECT COUNT(*)
+      INTO v_nb_arc_centre
+      FROM PERSONNEL
+      WHERE ROLE = v_metier
+        AND ID_CENTRE = v_idCentre;
+    
+      IF v_nb_arc_centre > 0 THEN
+        -- un ARC ou Data-Manager existe déjà dans ce centre : on tire un autre rôle (ni ARC ni Data-Manager)
+        LOOP
+          v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_roles.COUNT + 1));
+          v_metier := v_roles(v_index);
+          EXIT WHEN v_metier NOT IN ('ARC', 'Data-Manager');
+        END LOOP;
+      END IF;
+    END IF;
 
-        INSERT INTO PERSONNEL (ID_PERSO, ID_CENTRE, NUM_ADELI, NOM, ROLE) -- insertion
-        VALUES (NULL, v_idCentre, NULL, v_sonIdentite, v_metier);
-    END LOOP;
+    INSERT INTO PERSONNEL (ID_PERSO, ID_CENTRE, NUM_ADELI, NOM, ROLE)
+    VALUES (NULL, v_idCentre, NULL, v_sonIdentite, v_metier);
+  END LOOP;
 END;
 /
-commit;
 
-SELECT NumerotationPersonnelSeq.NEXTVAL FROM dual;
+SELECT NumerotationPersonnelSeq.NEXTVAL FROM dual; -- pour afficher le prochain numéro de l'ID_PERSO (num auto)
 
---call
-call PeuplePersonnel(15); -- Insère 15 personnel
+-----Appel de la procédure----------
+call PeuplePersonnel(30); -- Insère 30 personnel
 
 -- 03 Avril 2026
--- Procédure de nettoyage du personnel (développé par C)
+-------------------------------------------Procédure de nettoyage du personnel (développé par C)------------------------------------
 -- Procedure permettant d'effacer le contenu à partir d'un nombre de départ 
 CREATE OR REPLACE PROCEDURE CleanPersonnel  (debut IN NUMBER, fin IN NUMBER) AS
     v_max Number; 
@@ -226,6 +226,51 @@ end;
 /
 commit;
 
-call CleanPersonnel (22,36); -- (Efface les personnel dont les identifiants sont compris entre 22 et 36,les deux inclus)
+call CleanPersonnel (2,31);-- (Efface les personnel dont les identifiants sont compris entre 22 et 36,les deux inclus)
+
+commit;
+
+-----------------------------------Procédure de peuplement du personnel médical (développé par C)----------------------------------------
+CREATE OR REPLACE PROCEDURE PeuplePersoMedical AS -- procédure qui peuple la table perso_med en récupérant les infos du personnel en fonction de son rôle
+BEGIN
+  FOR p IN (
+    SELECT ID_PERSO, NUM_ADELI, ROLE
+    FROM   PERSONNEL
+    WHERE  ROLE IN ('Medecin','Infirmiere','KINE','Cardiologue','Biologiste') -- Pour chaque personnel qui a un rôle parmi Médecin, Infirmière, KINE, Cardiologue ou Biologiste, exécute les instructions du LOOP une fois avec ses données dans la variable p
+  )
+  LOOP
+    -- détermination du service en fonction du rôle
+    DECLARE
+      v_service VARCHAR2(100);
+    BEGIN
+      IF p.ROLE = 'Cardiologue' THEN
+        v_service := 'Test d''effort';
+      ELSIF p.ROLE = 'Biologiste' THEN
+        v_service := 'Prise de sang et des résultats d''analyse';
+      ELSE
+        v_service := 'Electro-encéphalogramme';
+      END IF;
+
+      -- insertion dans PERSO_MED
+      INSERT INTO PERSO_MED (NUM_ADELI, ID_PERSO, SPECIALITE, SERVICE)
+      VALUES (NULL, p.ID_PERSO, p.ROLE, v_service);
+    END;
+  END LOOP;
+END;
+/
+
+-- call
+call PeuplePersoMedical(); -- Appel de la procédure de peuplement du personnel médical
+
+------------------ A faire ! pour pouvoir casser les clés étrangères en boucle qu'on avait et qui empêchait le nettoyage des tables-------------
+ALTER TABLE PERSONNEL
+  DROP CONSTRAINT FK_PERSONNE_EST_SOIGN_PERSO_ME;
+ALTER TABLE PATIENT
+  DROP CONSTRAINT FK_PATIENT_APPARTIEN_DOSSIER;
+DELETE FROM PERSONNEL;
+
+COMMIT; 
+---------------------------------------------------------------------------------------------------------------------------------
+
 
 
