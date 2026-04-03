@@ -88,3 +88,4 @@ INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19
 INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19-03-2026','DD-MM-YYYY'),1,TO_DATE ('20-03-2026','DD-MM-YYYY')); -- (RA :Insertion validée)(RO: 1 ligne inséré => Validé)
 -- Trigger validé // Testé par C
 COMMIT; 
+/
