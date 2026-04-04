@@ -117,7 +117,9 @@ create or replace trigger trg_PatientAutoNum
 before insert on Patient
 for each row
 begin 
-    select NumerotationPatientSeq.nextval into :NEW.Id_Patient from dual; -- Insert la valeur à partir de la séquence de numérotation
+    If :NEW.Id_Patient = NULL then
+        select NumerotationPatientSeq.nextval into :NEW.Id_Patient from dual; -- Insert la valeur à partir de la séquence de numérotation
+    end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Patient
 
@@ -126,7 +128,9 @@ create or replace trigger trg_CentreAutoNum
 before insert on Centre
 for each row
 begin 
-    select NumerotationCentreSeq.nextval into :NEW.Id_Centre from dual; -- Insert la valeur à partir de la séquence de numérotation
+    If :NEW.Id_Centre = NULL then
+        select NumerotationCentreSeq.nextval into :NEW.Id_Centre from dual; -- Insert la valeur à partir de la séquence de numérotation
+    end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Centre
 
@@ -135,7 +139,9 @@ create or replace trigger trg_PersonnelAutoNum
 before insert on Personnel
 for each row
 begin 
-    select NumerotationPersonnelSeq.nextval into :NEW.Id_Perso from dual; -- Insert la valeur à partir de la séquence de numérotation
+    If :NEW.Id_Perso = NULL then
+        select NumerotationPersonnelSeq.nextval into :NEW.Id_Perso from dual; -- Insert la valeur à partir de la séquence de numérotation
+    end if;
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Perso
 /
@@ -233,11 +239,7 @@ commit;
 -----------------------------------Procédure de peuplement du personnel médical (développé par C)----------------------------------------
 CREATE OR REPLACE PROCEDURE PeuplePersoMedical AS -- procédure qui peuple la table perso_med en récupérant les infos du personnel en fonction de son rôle
 BEGIN
-  FOR p IN (
-    SELECT ID_PERSO, NUM_ADELI, ROLE
-    FROM   PERSONNEL
-    WHERE  ROLE IN ('Medecin','Infirmiere','KINE','Cardiologue','Biologiste') -- Pour chaque personnel qui a un rôle parmi Médecin, Infirmière, KINE, Cardiologue ou Biologiste, exécute les instructions du LOOP une fois avec ses données dans la variable p
-  )
+  FOR p IN (SELECT ID_PERSO, NUM_ADELI, ROLE FROM   PERSONNEL WHERE  ROLE IN ('Medecin','Infirmiere','KINE','Cardiologue','Biologiste')) -- Pour chaque personnel qui a un rôle parmi Médecin, Infirmière, KINE, Cardiologue ou Biologiste, exécute les instructions du LOOP une fois avec ses données dans la variable p
   LOOP
     -- détermination du service en fonction du rôle
     DECLARE
@@ -261,6 +263,8 @@ END;
 
 -- call
 call PeuplePersoMedical(); -- Appel de la procédure de peuplement du personnel médical
+
+Delete from Personnel;
 
 ------------------ A faire ! pour pouvoir casser les clés étrangères en boucle qu'on avait et qui empêchait le nettoyage des tables-------------
 ALTER TABLE PERSONNEL

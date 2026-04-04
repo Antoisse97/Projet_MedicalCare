@@ -1,4 +1,4 @@
--- C3_PathoExcluante
+-----------------------------C3_PathoExcluante (codée par Antoisse)-----------------------------
 CREATE OR REPLACE TRIGGER check_Patho_Excluante 
 BEFORE INSERT OR UPDATE --avant d'inserer un patient dans la table patient 
 ON PATHOLOGIE  
@@ -15,9 +15,9 @@ insert into PATHOLOGIE VALUES ('Peste', 'oui'); -- l'attribut Excluante n'est pa
 insert into PATHOLOGIE VALUES ('Diabète', 'non');
 select * from PATHOLOGIE;
 --drop trigger check_Patho_Excluante
+------------------------------------------------------------------------------------------------
 
-
--------------
+-----------------------C2_EtatPhysique (codée par Antoisse)----------------------------------
 --C2_EtatPhysique
 CREATE OR REPLACE TRIGGER check_IMC
 BEFORE INSERT 
@@ -29,6 +29,9 @@ BEGIN
     END IF;
 end;
 /
+------------------------------------------------------------------------------------------------
+
+------------------A5_UptadeNumDossier après saisit du patient (codée par Antoisse)------------------
 --trigger uptade de patient après la saisit de son dossier
 CREATE OR REPLACE TRIGGER trg_uptadePatient_AprèsSaisitDossier
 AFTER INSERT 
@@ -40,7 +43,7 @@ BEGIN
     WHERE ID_PATIENT = :NEW.ID_PATIENT;
 END;
 /
-
+----------------------------------------------------------------------------------------------------
 -- Test ajout patient 
 
 Insert into centre values (1);
@@ -49,10 +52,6 @@ Update personnel set NUM_ADELI=2345 where ID_PERSO=1 ;
 Insert into perso_med values (2345,1,'Medecin',NULL);
 Insert into Patient values (1,2345,NULL,1,'Brice','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
 
-Insert into Patient values (3,2345,NULL,1,'Antoisse','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),160,130,30,'H','VP',1); -- test IMC ne doit pas fonctionner 
-Insert into Patient values (3,2345,NULL,1,'Antoisse','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-
-
 --test mise a jour dossier patient antoisse
 Insert into Patient values (4,2345,NULL,1,'Caleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
 INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie'); 
@@ -60,19 +59,8 @@ INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie');
 Insert into Patient values (5,2345,NULL,1,'Ccaleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
 INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
 
---Contraintes C1_AgeInclusion
-CREATE OR REPLACE TRIGGER check_Age_Inclusion
-BEFORE INSERT 
-ON Patient 
-FOR EACH ROW 
-BEGIN 
-    IF :NEW.DateDeNaissance > TO_DATE('01/01/2008','DD-MM-YYYY') or :NEW.DateDeNaissance < TO_DATE('01/01/1961','DD-MM-YYYY') THEN
-    RAISE_APPLICATION_ERROR(-20001, 'L''age du patient ne respecte pas les critères d''inclusions');
-    END IF;
-END;
-/
 
---
+-------------------Contraintes C1_AgeInclusion codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER check_Age_Inclusion
 BEFORE INSERT ON PATIENT
 FOR EACH ROW
@@ -91,8 +79,10 @@ BEGIN
 END;
 /
 COMMIT;
+----------------------------------------------------------------------------------------------------
 
---numéros adéli 
+
+------------------A1_Calcul_NumAdéli codé par Antoisse--------------------------------------
 CREATE OR REPLACE TRIGGER trg_adeli_medecin
 BEFORE INSERT ON PERSO_MED
 FOR EACH ROW
@@ -124,23 +114,29 @@ BEGIN
     :NEW.NUM_ADELI := v_base + :NEW.ID_PERSO;
 END;
 /
-----------------------------------------------
+----------------------------------------------------------------------------------------------------
+
+
+--------------- A6_Uptade_NumAdéli codé par Antoisse--------------------------------------
 --trigger uptade numéro adéli  -> Perso_Med après la saisit d'un Personnel
 CREATE OR REPLACE TRIGGER trg_uptadePerso_Med_aprèsSaisitPersonnel
 AFTER INSERT 
-ON PERSONNEL 
+ON PERSO_MED 
 FOR EACH ROW 
 BEGIN 
-    UPDATE PERSO_MED 
+    UPDATE PERSONNEL 
     SET Num_Adeli = :NEW.Num_Adeli
     WHERE Id_Perso = :NEW.Id_Perso;
 END; 
 /
+----------------------------------------------------------------------------------------------------
+
+Drop trigger TRG_UPTADEPERSO_MED_APRÈSSAISITPERSONNEL;
 -- prêt pour être testé 
 COMMIT;
 
 
---trigger qui empêche d'enregistrer un patient dans plus d'un centre
+------------ -----------C6_CohérencePatientCentre codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER CHECK_PATIENT_CENTRE_FIXE
 BEFORE UPDATE OF ID_CENTRE ON PATIENT
 FOR EACH ROW
@@ -152,6 +148,7 @@ END;
 /
 
 COMMIT;
+----------------------------------------------------------------------------------------------------
 
 -- test 
 -- insertion d'un patient dans un centre
@@ -164,7 +161,7 @@ Update PATIENT set ID_CENTRE = 2 where ID_PATIENT=5 ; -- fonctionne
 COMMIT;
 
 
--- Trigger qui vérifie si le patient est dans le même centre que son médécin référent
+------------ ----------- C7_CohérenceMédPatient codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER CHECK_MED_PATIENT_CENTRE
 BEFORE INSERT OR UPDATE OF ID_CENTRE, NUM_ADELI ON PATIENT -- avant l'insertion d'un patient dans la table patient, on vérifie le couple d'attrinut Id_centre et Num_Adeli
 FOR EACH ROW
@@ -194,7 +191,10 @@ END;
 /
 COMMIT
 -- Pour le test on est censé avoir une non insertion du nouveau patient avec le message d'erreur: 'Le médecin référent n'est pas rattaché au centre du patient : affectation refusée'
+----------------------------------------------------------------------------------------------------
 
+
+------------ ----------- C8_UneFicheParJour codée par Caleb--------------------------------------
 -- Tester l'insertion d'une fiche quotidienne
 -- Trigger pour éviter d'avoir un doublon de fiche pour le même patient dans la même journée
 CREATE OR REPLACE TRIGGER CHECK_UNE_FICHE_JOUR_PAR_PATIENT
@@ -216,13 +216,12 @@ COMMIT
 -- Doit refuser l'enregistrement d'un patient pour lequel on avait deja enregistré une fiche à la meme date , donc pas de 2nde fiche pour le meme patient le même jour
 -- Changement de nom de la colonne Num J car cette colonne correspond plutôt au numéro unique de chaque fiche quotidienne
 ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
+----------------------------------------------------------------------------------------------------
+
 
 ---- 24 Mars 2026
 --trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (NUMJ) 
 
---<<<<<<< HEAD
-
-=======
 CREATE OR REPLACE TRIGGER trg_ExamCoherentAvecJour
 BEFORE INSERT ON FICHE_EXAM
 FOR EACH ROW
@@ -247,5 +246,4 @@ BEGIN
 END;
 /
 
-commit
--->>>>>>> 5fcf9159ee8fe16a640d43313f8bde4f8df8c371
+commit;
