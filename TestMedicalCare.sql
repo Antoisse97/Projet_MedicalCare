@@ -1,6 +1,7 @@
----------------Test de la contrainte C3_PathologieExcluante (Codée par Antoisse, testée par Caleb)--------------------
----------------TEST PATHOLOGIE EXCLUANTE--------------------
-SET SERVEROUTPUT ON;
+---------------Test de la contrainte C3_PathologieExcluante (Codée par Antoisse, testée par Caleb)----------------
+
+-------------------------------------TEST PATHOLOGIE EXCLUANTE----------------------------------------------------
+SET SERVEROUTPUT ON; -- pour afficher du texte dans la console
 
 BEGIN
   -- On nettoie juste les valeurs de test
@@ -48,8 +49,10 @@ Insert into perso_med values (2345,1,'Medecin',NULL);
 
 Insert into Patient values (900,1066,NULL,4,'Bro','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
 
+
 ------------------Test de la contrainte C2_IMCValide (Codée par Antoisse, testée par Caleb le 24/03/2026)--------------------
---------------------TEST_IMC_VALIDE---------------
+
+------------------------------------------------TEST_IMC_VALIDE--------------------------------------------------------------
 SET SERVEROUTPUT ON;
 
 BEGIN
@@ -80,8 +83,10 @@ BEGIN
 END;
 /
 
+
 ------------------Test de la contrainte C1_AgeInclusion (Codée par Caleb, testée par Antoisse le 24/03/2026)--------------------
---------------------TEST_AGE_INCLUSION---------------
+
+---------------------------------------------------TEST_AGE_INCLUSION-----------------------------------------------------------
 SET SERVEROUTPUT ON;
 
 BEGIN
@@ -113,10 +118,11 @@ BEGIN
 END;
 /
 
+
 -------------------Test de la contrainte CHECK_MED_PATIENT_CENTRE (Codée par Caleb, testée par Antoisse le 24/03/2026)--------------------
----------------------------TEST_COHERENCE_PATIENT_CENTRE-----------------------------
---------------------
-SET SERVEROUTPUT ON;
+
+----------------------------------------------TEST_COHERENCE_PATIENT_CENTRE---------------------------------------------------------------
+SET SERVEROUTPUT ON; 
 
 BEGIN
 
@@ -162,80 +168,226 @@ BEGIN
 END;
 /
 
+
 --test mise a jour dossier patient antoisse
 Insert into Patient values (4,2345,NULL,1,'Caleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
 INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie'); 
 
 Insert into Patient values (5,2345,NULL,1,'Ccaleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
+INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie');
 
--- test 
--- insertion d'un patient dans un centre
-Insert into centre values (2);
-Insert into Patient values (5,2345,NULL,1,'Brauwn','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
-INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
--- insertion du même patient dans un autre centre (ici centre 2) 
-Update PATIENT set ID_CENTRE = 2 where ID_PATIENT=5 ; -- fonctionne  
--- Validé
 
--- CHECK_MED_PATIENT_CENTRE
--- Pour le test on est censé avoir une non insertion du nouveau patient
--- creation d'un nouveau medecin
-Insert into centre values (2);
-Insert into personnel values (5,2,NULL,'Dupont','Medecin');
-Insert into perso_med values (4345,5,'Medecin',NULL);
 
--- insertion d'un nouveau patient contrôle 
-Insert into Patient values (6,1005,NULL,2,'Zaza','Aucun', TO_DATE('05-03-2001','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-INSERT INTO DOSSIER VALUES (6, 6, 'Neurochirurgie'); 
--- insertion du patient crash test 
-Insert into Patient values (7,1005,NULL,1,'Zozo','Aucun', TO_DATE('05-03-2002','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-INSERT INTO DOSSIER VALUES (7, 7, 'Neurochirurgie'); 
+
+------------------- Test de la contrainte CHECK_MED_PATIENT_CENTRE (codée par Caleb, testée par Antoisse le 24/03/2026)--------------------
+
+-----------------------------------------------TEST_COHERENCE_MED_PATIENT---------------------------------------------------------------
+SET SERVEROUTPUT ON;
+
+BEGIN
+  ---------------------------------------------------------------------------
+  -- CAS 1 : patient contrôle (centre cohérent avec le médecin) -> doit passer
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO PATIENT VALUES (NULL, 1066, NULL, 4, 'Zaza', 'Aucun', TO_DATE('05-03-2001','DD-MM-YYYY'),60, 180, 30, 'H', 'VP', 1);
+    DBMS_OUTPUT.PUT_LINE('C7 - OK   : patient (Zaza) accepté avec médecin 1066 au centre 4.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C7 - ECHEC : patient Zaza refusé à tort : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ---------------------------------------------------------------------------
+  -- CAS 2 : patient crash test (centre incohérent avec le médecin) -> doit être refusé
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO PATIENT VALUES (NULL, 1066, NULL, 1, 'Zozo', 'Aucun', TO_DATE('05-03-2002','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', 1);
+    DBMS_OUTPUT.PUT_LINE('C7 - ECHEC : patient (Zozo) a été inséré alors qu''il aurait dû être refusé.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C7 - OK   : patient (Zozo) refusé comme attendu : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ROLLBACK;  -- on ne garde rien en base
+END;
+/
 
 ---- 24 Mars 2026
 --------------------------Test de la contrainte CHECK_UNE_FICHE_JOUR_PAR_PATIENT (Codée par Caleb, testé par Antoisse le 24/03/2026)--------------------
------------- Une seule fiche quotidienne pour un patient par le même jour
-insert into FICHE_QUOTIDIENNE VALUES (1,5,22,10,80,180,190,37,'le patient se porte bien et répond bien au medicament', 'le patient est ok', to_date('24-03-2026','DD-MM-YYYY')); -- (RA: doit fonctionner)(RO: Insertion validé => Validé)
-insert into FICHE_QUOTIDIENNE VALUES (1,5,22,10,80,180,190,37,'le patient est malade', 'le patient n''est pas ok', to_date('24-03-2026','DD-MM-YYYY')); -- (RA: ne doit pas fonctionner)(RO: Insertion refusée => Validé)
+
+----------------------------------------------------TEST_FICHE_QUOTIDIENNE_UNIQUE------------------------------------------------
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Nettoyage des données de test
+  DELETE FROM FICHE_QUOTIDIENNE WHERE ID_PATIENT = 900 AND DATEJ = TO_DATE('24-03-2026','DD-MM-YYYY');
+  COMMIT;
+
+  ---------------------------------------------------------------------------
+  -- CAS 1 : 1ère fiche du patient 900 le 24/03/2026 -> doit ÊTRE ACCEPTÉE
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO FICHE_QUOTIDIENNE VALUES (NULL, 900, 22, 10, 80, 180, 190, 37, 'le patient se porte bien et répond bien au medicament', 'le patient est ok', TO_DATE('24-03-2026','DD-MM-YYYY'));
+    DBMS_OUTPUT.PUT_LINE('C8 - OK   : 1ère fiche pour patient 900 le 24/03/2026 acceptée.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C8 - ECHEC : 1ère fiche pour patient 900 refusée : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ---------------------------------------------------------------------------
+  -- CAS 2 : 2e fiche pour le MÊME patient 900 et la MÊME date -> doit ÊTRE REFUSÉE
+  ---------------------------------------------------------------------------
+  BEGIN
+  INSERT INTO FICHE_QUOTIDIENNE VALUES (NULL, 900, 22, 10, 80, 180, 190, 37, 'le patient se porte bien et répond bien au medicament', 'le patient est ok', TO_DATE('24-03-2026','DD-MM-YYYY'));
+    DBMS_OUTPUT.PUT_LINE('C8 - ECHEC : 2e fiche pour patient 900 le 24/03/2026 a été insérée (aurait dû être refusée).');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C8 - OK   : 2e fiche pour patient 900 refusée comme attendu : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
+/
 -- Trigger validé // Testé par Antoisse le 24/03/2026
 
 --------------------------Test du trigger trg_adeli_medecin (Codée par Antoisse, testé par Caleb le 24/03/2026)--------------------
--- Insertion des personnels médicales selon leur rôle
-INSERT INTO PERSONNEL VALUES (3,1,NULL,'Paul','Medecin') ;
-INSERT INTO PERSONNEL VALUES (4,1,NULL,'Julie','Infirmiere');
-INSERT INTO PERSONNEL VALUES (5,1,NULL,'Marthe','Cardiologue');
-INSERT INTO PERSONNEL VALUES (6,1,NULL,'Jean','KINE');
-INSERT INTO PERSONNEL VALUES (7,1,NULL,'Karl','Biologiste');
-INSERT INTO PERSONNEL VALUES (8,1,NULL,'Brice','ARC');
--- Le numéro adeli doit être mis à jour automatiquement selon la logique du métier concerné// Résultat attendu : RA et Résultat obtenu : RO
--- Pour le médécin 
-INSERT INTO PERSO_MED VALUES (3,3,'Medecin',NULL); -- (RA :1000 + ID perso donc => 1003)(RO: 1003 => Validé)
--- Pour l'Infirmiere 
-INSERT INTO PERSO_MED VALUES (4,4,'Infirmiere',NULL); -- (RA :2000 + ID perso donc => 2004)(RO: 2003 => Validé)
--- Pour le Cardiologue 
-INSERT INTO PERSO_MED VALUES (5,5,'Cardiologue',NULL); -- (RA :3000 + ID perso donc => 3005)(RO: 3005 => Validé)
--- Pour le Kiné 
-INSERT INTO PERSO_MED VALUES (6,6,'KINE',NULL); -- (RA :4000 + ID perso donc => 4006)(RO: 4006 => Validé)
--- Pour le Biologiste 
-INSERT INTO PERSO_MED VALUES (7,7,'Biologiste',NULL); -- (RA :5000 + ID perso donc => 5007)(RO: 5007 => Validé)
--- Test pour l'arc normalement cela lève une erreur car il ne peut pas avoir de num adeli
-INSERT INTO PERSO_MED VALUES (8,8,'ARC',NULL); -- (RA :Message d'erreur "Le rôle saisit est inconnu" => Pas de mise à jour ni d'insertion)(RO: Pas d'insertion + message d'erreur => Validé)
--- Trigger validé // Testé par Caleb le 24/03/2026
-COMMIT; 
+
+--------------------------------------------------TEST_TRIGGER_ADELI_MEDICAL-------------------------------------------------------
+
+SET SERVEROUTPUT ON;
+DECLARE
+  v_num_adeli PERSO_MED.NUM_ADELI%TYPE;
+BEGIN
+  -- Nettoyage des données de test
+  DELETE FROM PERSO_MED
+  WHERE ID_PERSO IN (3,4,5,6,7,8);
+
+  DELETE FROM PERSONNEL
+  WHERE ID_PERSO IN (3,4,5,6,7,8);
+
+  COMMIT;
+
+  ---------------------------------------------------------------------------
+  -- 1) Préparation : insertion des PERSONNEL selon leur rôle
+  ---------------------------------------------------------------------------
+  INSERT INTO PERSONNEL VALUES (3, 1, NULL, 'Paul',  'Medecin');
+
+  INSERT INTO PERSONNEL VALUES (4, 1, NULL, 'Julie', 'Infirmiere');
+
+  INSERT INTO PERSONNEL VALUES (5, 1, NULL, 'Marthe','Cardiologue');
+
+  INSERT INTO PERSONNEL VALUES (6, 1, NULL, 'Jean',  'KINE');
+
+  INSERT INTO PERSONNEL VALUES (7, 1, NULL, 'Karl',  'Biologiste');
+
+  INSERT INTO PERSONNEL VALUES (8, 1, NULL, 'Brice', 'ARC');
+
+  COMMIT;
+
+  ---------------------------------------------------------------------------
+  -- 2) Tests des rôles avec NUM_ADELI calculé
+  ---------------------------------------------------------------------------
+
+  -- Medecin : base 1000 -> 1000 + 3 = 1003
+  INSERT INTO PERSO_MED VALUES (NULL, 3, 'Medecin', NULL);
+  SELECT NUM_ADELI INTO v_num_adeli FROM PERSO_MED WHERE ID_PERSO = 3;
+  DBMS_OUTPUT.PUT_LINE('A1 - Medecin : NUM_ADELI attendu = 1003, obtenu = ' || v_num_adeli);
+
+  -- Infirmiere : base 2000 -> 2000 + 4 = 2004
+  INSERT INTO PERSO_MED VALUES (NULL, 4, 'Infirmiere', NULL);
+  SELECT NUM_ADELI INTO v_num_adeli FROM PERSO_MED WHERE ID_PERSO = 4;
+
+  DBMS_OUTPUT.PUT_LINE('A1 - Infirmiere : NUM_ADELI attendu = 2004, obtenu = ' || v_num_adeli);
+
+  -- Cardiologue : 3000 + 5 = 3005
+  INSERT INTO PERSO_MED VALUES (NULL, 5, 'Cardiologue', NULL);
+  SELECT NUM_ADELI INTO v_num_adeli FROM PERSO_MED WHERE ID_PERSO = 5;
+  DBMS_OUTPUT.PUT_LINE('A1 - Cardiologue : NUM_ADELI attendu = 3005, obtenu = ' || v_num_adeli);
+
+  -- KINE : 4000 + 6 = 4006
+  INSERT INTO PERSO_MED VALUES (NULL, 6, 'KINE', NULL);
+  SELECT NUM_ADELI INTO v_num_adeli FROM PERSO_MED WHERE ID_PERSO = 6;
+  DBMS_OUTPUT.PUT_LINE('A1 - KINE : NUM_ADELI attendu = 4006, obtenu = ' || v_num_adeli);
+
+  -- Biologiste : 5000 + 7 = 5007
+  INSERT INTO PERSO_MED VALUES (NULL, 7, 'Biologiste', NULL);
+  SELECT NUM_ADELI INTO v_num_adeli FROM PERSO_MED WHERE ID_PERSO = 7;
+  DBMS_OUTPUT.PUT_LINE('A1 - Biologiste : NUM_ADELI attendu = 5007, obtenu = ' || v_num_adeli);
+
+  ---------------------------------------------------------------------------
+  -- 3) Cas ARC : doit LEVER l'erreur -20010 (rôle inconnu)
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO PERSO_MED VALUES (NULL, 8, 'ARC', NULL);
+    DBMS_OUTPUT.PUT_LINE('A1 - ECHEC : insertion ARC acceptée alors qu''elle devait être refusée.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('A1 - OK   : insertion ARC refusée avec erreur : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
 /
+-- Trigger validé // Testé par Caleb le 24/03/2026
+
 
 ALTER TABLE FICHE_EXAM RENAME COLUMN NUMJ TO NUM_F; -- petite modification pour la cohérence entre les tables
 
----- 25 Mars 2026
------------------------------Test du trigger trg_ExamCoherentAvecJour (Codé par Antoisse, testé par Caleb le 25/03/2026)-------------------
--- Test du trigger trg_ExamCoherentAvecJour (contrainte de cohérence des dates de la fiche quotidienne) 
--- Résultat attendu : RA et Résultat obtenu : RO
--- Test avec des dates pas cohérentes (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 alors que la date de prescription qu'on a renseigné ici est différente)
-INSERT INTO FICHE_EXAM VALUES (1,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('20-03-2026','DD-MM-YYYY'),1,TO_DATE ('20-03-2026','DD-MM-YYYY')); -- (RA :Message d'erreur disant que les dates ne sont pas cohérentes)(RO: La date du jour n'est pas cohérente avec les dates de prescription et de réalisation => Validé)
--- Test avec une date incohérente (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 est même date de prescription de la fiche exam mais la date de réalisation est inférieur à celle de prescription (c'est pas cohérent))
-INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19-03-2026','DD-MM-YYYY'),1,TO_DATE ('18-03-2026','DD-MM-YYYY')); -- (RA :Message d'erreur disant que les  dates ne sont pas cohérentes)(RO: La date du jour n'est pas cohérente avec les dates de prescription et de réalisation => Validé)
--- Test avec des dates cohérentes (La date de prescription dans la fiche quotidienne 1 est 19/03/2026 et la date de prescription qu'on a renseigné ici est la même)
-INSERT INTO FICHE_EXAM VALUES (3,NULL,NULL,1,NULL,'Analyse de sang',TO_DATE ('19-03-2026','DD-MM-YYYY'),1,TO_DATE ('20-03-2026','DD-MM-YYYY')); -- (RA :Insertion validée)(RO: 1 ligne inséré => Validé)
+
+----------------------Test de la contrainte Check_ExamCoherentAvecJour (Codée par Antoisse, testée par Caleb le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_COHERENCE_EXAM_JOUR------------------------------------------------
+SET SERVEROUTPUT ON;
+
+BEGIN
+  ---------------------------------------------------------------------------
+  -- Préparation : création d'une fiche quotidienne pour le patient 900 le 19/03/2026
+  ---------------------------------------------------------------------------
+  INSERT INTO FICHE_QUOTIDIENNE VALUES (4, 900, 22, 10, 80, 180, 190, 37, 'le patient se porte bien et répond bien au medicament', 'le patient est ok', TO_DATE('19-03-2026','DD-MM-YYYY'));
+  COMMIT;
+
+  ---------------------------------------------------------------------------
+  -- CAS 1 : DATEPRESCRIPTION différente de DATEJ -> doit ÊTRE REFUSÉ
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO FICHE_EXAM VALUES (1, NULL, NULL, 4, NULL,'Analyse de sang',TO_DATE('20-03-2026','DD-MM-YYYY'), 1, TO_DATE('20-03-2026','DD-MM-YYYY'));
+    DBMS_OUTPUT.PUT_LINE('C9 - ECHEC : cas1 inséré alors qu''il devait être refusé.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C9 - OK   : cas1 refusé comme attendu : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ---------------------------------------------------------------------------
+  -- CAS 2 : DATEPRESCRIPTION = DATEJ mais DATEREALISATION < DATEJ -> REFUS
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO FICHE_EXAM VALUES (2, NULL, NULL, 4, NULL, 'Analyse de sang', TO_DATE('19-03-2026','DD-MM-YYYY'), 1, TO_DATE('18-03-2026','DD-MM-YYYY'));
+    DBMS_OUTPUT.PUT_LINE('C9 - ECHEC : cas2 inséré alors qu''il devait être refusé.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C9 - OK   : cas2 refusé comme attendu : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ---------------------------------------------------------------------------
+  -- CAS 3 : dates cohérentes -> doit ÊTRE ACCEPTÉ
+  -- DATEPRESCRIPTION = DATEJ = 19/03/2026, DATEREALISATION >= DATEJ
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO FICHE_EXAM VALUES (3, NULL, NULL, 4, NULL, 'Analyse de sang', TO_DATE('19-03-2026','DD-MM-YYYY'), 1, TO_DATE('20-03-2026','DD-MM-YYYY'));
+
+    DBMS_OUTPUT.PUT_LINE('C9 - OK   : cas3 (dates cohérentes) inséré comme attendu.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('C9 - ECHEC : cas3 (cohérent) refusé : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
 -- Trigger validé // Testé par Caleb le 25/03/2026
-COMMIT; 
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
 /

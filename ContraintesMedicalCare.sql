@@ -108,12 +108,13 @@ BEGIN
         v_base :=5000;
     ELSE 
         v_base := 9000; --valeur default
-        RAISE_APPLICATION_ERROR(-20010, 'Le role saisit est inconu');
+        RAISE_APPLICATION_ERROR(-20010, 'La personne n''est pas un personnel medical');
     END IF; 
 -- calcul du num adeli 
     :NEW.NUM_ADELI := v_base + :NEW.ID_PERSO;
 END;
 /
+COMMIT;
 ----------------------------------------------------------------------------------------------------
 
 
@@ -222,7 +223,7 @@ ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
 ---- 24 Mars 2026
 --trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (NUMJ) 
 
-CREATE OR REPLACE TRIGGER trg_ExamCoherentAvecJour
+CREATE OR REPLACE TRIGGER Check_ExamCoherentAvecJour
 BEFORE INSERT ON FICHE_EXAM
 FOR EACH ROW
 DECLARE
@@ -247,3 +248,5 @@ END;
 /
 
 commit;
+
+

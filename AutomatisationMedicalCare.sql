@@ -110,6 +110,10 @@ create sequence NumerotationCentreSeq
 -- creation d'une sequence de numérotation automatique pour le personnel
 create sequence NumerotationPersonnelSeq
     start with 1 increment by 1;
+
+-- creation d'une sequence de numérotation automatique pour la fiche quotidienne
+create sequence NumerotationFicheQuotidienneSeq
+    start with 1 increment by 1;
     
 drop sequence NumerotationPersonnelSeq;
 ----------------------------Trigger d'automatisation de la numérotation du patient----------------------------------------------
@@ -117,30 +121,42 @@ create or replace trigger trg_PatientAutoNum
 before insert on Patient
 for each row
 begin 
-    If :NEW.Id_Patient = NULL then
+    If :NEW.Id_Patient is NULL then
         select NumerotationPatientSeq.nextval into :NEW.Id_Patient from dual; -- Insert la valeur à partir de la séquence de numérotation
     end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Patient
 
--- Trigger d'automatisation de la numérotation du centre 
+------------------------------------Trigger d'automatisation de la numérotation du centre---------------------------
 create or replace trigger trg_CentreAutoNum
 before insert on Centre
 for each row
 begin 
-    If :NEW.Id_Centre = NULL then
+    If :NEW.Id_Centre is NULL then
         select NumerotationCentreSeq.nextval into :NEW.Id_Centre from dual; -- Insert la valeur à partir de la séquence de numérotation
     end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Centre
 
--- Trigger d'automatisation de la numérotation du Personnel 
+--------------------------Trigger d'automatisation de la numérotation du Personnel 
 create or replace trigger trg_PersonnelAutoNum
 before insert on Personnel
 for each row
 begin 
-    If :NEW.Id_Perso = NULL then
+    If :NEW.Id_Perso is NULL then
         select NumerotationPersonnelSeq.nextval into :NEW.Id_Perso from dual; -- Insert la valeur à partir de la séquence de numérotation
+    end if;
+end; 
+-- Pour tester il faut mettre un null à l'emplacement de Id_Perso
+/
+
+--------------------------Trigger d'automatisation de la numérotation de la fiche quotidienne 
+create or replace trigger trg_FicheQuotidienneAutoNum
+before insert on FICHE_QUOTIDIENNE
+for each row
+begin 
+    If :NEW.Num_F is NULL then
+        select NumerotationFicheQuotidienneSeq.nextval into :NEW.Num_F from dual; -- Insert la valeur à partir de la séquence de numérotation
     end if;
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Perso
