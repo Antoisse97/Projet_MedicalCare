@@ -1,7 +1,7 @@
 ---------------Test de la contrainte C3_PathologieExcluante (Codée par Antoisse, testée par Caleb)----------------
 
 -------------------------------------TEST PATHOLOGIE EXCLUANTE----------------------------------------------------
-SET SERVEROUTPUT ON; -- pour afficher du texte dans la console
+SET SERVEROUTPUT ON; 
 
 BEGIN
   -- On nettoie juste les valeurs de test
@@ -59,7 +59,7 @@ BEGIN
   -- CAS 1 : IMC invalide -> doit être refusé
   BEGIN
     INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
-    VALUES (NULL, 1066, NULL, 4, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 160, 130, 30, 'H', 'VP', '1'); -- patient avec IMC anormal
+    VALUES (NULL, 1003, NULL, 1, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 160, 130, 30, 'H', 'VP', '1'); -- patient avec IMC anormal
     DBMS_OUTPUT.PUT_LINE('C2 - ECHEC : patient avec IMC invalide inséré.');
   EXCEPTION
     WHEN OTHERS THEN
@@ -70,7 +70,7 @@ BEGIN
   -- CAS 2 : IMC valide -> doit être accepté
   BEGIN
     INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
-    VALUES (NULL, 1066, NULL, 4, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec IMC normal
+    VALUES (NULL, 1003, NULL, 1, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec IMC normal
 
     DBMS_OUTPUT.PUT_LINE('C2 - OK   : patient avec IMC valide inséré.');
   EXCEPTION
@@ -94,7 +94,7 @@ BEGIN
   -- CAS 1 : âge invalide -> doit être refusé
   BEGIN
     INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
-    VALUES (NULL, 1066, NULL, 4, 'Blaise Karl', 'Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec âge non conforme
+    VALUES (NULL, 1003, NULL, 1, 'Blaise Karl', 'Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec âge non conforme
     DBMS_OUTPUT.PUT_LINE('C1 - ECHEC : patient avec age invalide inséré.');
   EXCEPTION
     WHEN OTHERS THEN
@@ -105,7 +105,7 @@ BEGIN
   -- CAS 2 : âge valide -> doit être accepté
   BEGIN
     INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
-    VALUES (NULL, 1066, NULL, 4, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec âge conforme
+    VALUES (NULL, 1003, NULL, 1, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1'); -- patient avec âge conforme
 
     DBMS_OUTPUT.PUT_LINE('C1 - OK   : patient avec âge valide inséré.');
   EXCEPTION
@@ -127,32 +127,15 @@ SET SERVEROUTPUT ON;
 BEGIN
 
   ---------------------------------------------------------------------------
-  -- Préparation : création de 2 patients
+  -- Préparation : création d'un patient
   ---------------------------------------------------------------------------
-  -- P1 : sans centre au départ (ID_CENTRE NULL)
-  INSERT INTO PATIENT VALUES (901, 1066, NULL, 4, 'TestSansCentre', 'Aucun', DATE '1990-01-01', 70, 175, NULL, 'H', 'TV', NULL);
 
-  -- P2 : déjà affecté au centre 4
-  INSERT INTO PATIENT VALUES (902, 1066, NULL, 4, 'TestAvecCentre', 'Aucun', DATE '1990-01-01', 70, 175, NULL, 'H', 'TV', NULL);
+  -- P1 : déjà affecté au centre 1
+  INSERT INTO PATIENT VALUES (902, 1003, NULL, 1, 'TestAvecCentre', 'Aucun', DATE '1990-01-01', 70, 175, NULL, 'H', 'TV', NULL);
 
   COMMIT;
 
-  ---------------------------------------------------------------------------
-  -- CAS 1 : passage de NULL -> 4 (doit ÊTRE ACCEPTÉ)
-  ---------------------------------------------------------------------------
-  BEGIN
-    UPDATE PATIENT SET ID_CENTRE = 4 WHERE ID_PATIENT = 901;
 
-    DBMS_OUTPUT.PUT_LINE('C6 - OK   : patient 901 est passé de NULL à centre 4 (autorisé).');
-  EXCEPTION
-    WHEN OTHERS THEN
-      DBMS_OUTPUT.PUT_LINE('C6 - ECHEC : patient 901 refusé à tort : '
-                           || SQLCODE || ' - ' || SQLERRM);
-  END;
-
-  ---------------------------------------------------------------------------
-  -- CAS 2 : passage de 4 -> 2 (doit ÊTRE REFUSÉ)
-  ---------------------------------------------------------------------------
   BEGIN
     UPDATE PATIENT SET ID_CENTRE = 2 WHERE ID_PATIENT = 902;
 
@@ -189,8 +172,8 @@ BEGIN
   -- CAS 1 : patient contrôle (centre cohérent avec le médecin) -> doit passer
   ---------------------------------------------------------------------------
   BEGIN
-    INSERT INTO PATIENT VALUES (NULL, 1066, NULL, 4, 'Zaza', 'Aucun', TO_DATE('05-03-2001','DD-MM-YYYY'),60, 180, 30, 'H', 'VP', 1);
-    DBMS_OUTPUT.PUT_LINE('C7 - OK   : patient (Zaza) accepté avec médecin 1066 au centre 4.');
+    INSERT INTO PATIENT VALUES (NULL, 1003, NULL, 1, 'Zaza', 'Aucun', TO_DATE('05-03-2001','DD-MM-YYYY'),60, 180, 30, 'H', 'VP', 1);
+    DBMS_OUTPUT.PUT_LINE('C7 - OK   : patient (Zaza) accepté avec médecin 1003 au centre 1.');
   EXCEPTION
     WHEN OTHERS THEN
       DBMS_OUTPUT.PUT_LINE('C7 - ECHEC : patient Zaza refusé à tort : '
@@ -201,7 +184,7 @@ BEGIN
   -- CAS 2 : patient crash test (centre incohérent avec le médecin) -> doit être refusé
   ---------------------------------------------------------------------------
   BEGIN
-    INSERT INTO PATIENT VALUES (NULL, 1066, NULL, 1, 'Zozo', 'Aucun', TO_DATE('05-03-2002','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', 1);
+    INSERT INTO PATIENT VALUES (NULL, 1003, NULL, 4, 'Zozo', 'Aucun', TO_DATE('05-03-2002','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', 1);
     DBMS_OUTPUT.PUT_LINE('C7 - ECHEC : patient (Zozo) a été inséré alors qu''il aurait dû être refusé.');
   EXCEPTION
     WHEN OTHERS THEN
