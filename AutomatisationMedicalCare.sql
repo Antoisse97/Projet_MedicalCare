@@ -1,3 +1,4 @@
+------------------A5_UptadeNumDossier après saisit du patient (codée par Antoisse)------------------
 --trigger uptade de patient après la saisit de son dossier
 CREATE OR REPLACE TRIGGER trg_uptadePatient_AprèsSaisitDossier
 AFTER INSERT 
@@ -10,8 +11,18 @@ BEGIN
 END;
 /
 COMMIT
+----------------------------------------------------------------------------------------------------
+-- Test ajout patient 
 
---numéros adéli 
+Insert into centre values (1);
+Insert into personnel values (1,1,NULL,'François','Medecin');
+Update personnel set NUM_ADELI=2345 where ID_PERSO=1 ;
+Insert into perso_med values (2345,1,'Medecin',NULL);
+Insert into Patient values (1,2345,NULL,1,'Brice','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
+
+---------------------------------------------------------------------------------------------
+
+------------------A1_Calcul_NumAdéli codé par Antoisse--------------------------------------
 CREATE OR REPLACE TRIGGER trg_adeli_medecin
 BEFORE INSERT ON PERSO_MED
 FOR EACH ROW
@@ -37,29 +48,38 @@ BEGIN
         v_base :=5000;
     ELSE 
         v_base := 9000; --valeur default
-        RAISE_APPLICATION_ERROR(-20010, 'Le role saisit est inconu');
+        RAISE_APPLICATION_ERROR(-20010, 'La personne n''est pas un personnel medical');
     END IF; 
 -- calcul du num adeli 
     :NEW.NUM_ADELI := v_base + :NEW.ID_PERSO;
 END;
 /
 COMMIT;
+----------------------------------------------------------------------------------------------------
 
+--------------- A6_Uptade_NumAdéli codé par Antoisse--------------------------------------
 --trigger uptade numéro adéli  -> Perso_Med après la saisit d'un Personnel
 CREATE OR REPLACE TRIGGER trg_uptadePerso_Med_aprèsSaisitPersonnel
-AFTER INSERT ON PERSONNEL 
+AFTER INSERT 
+ON PERSO_MED 
 FOR EACH ROW 
 BEGIN 
-    UPDATE PERSO_MED 
+    UPDATE PERSONNEL 
     SET Num_Adeli = :NEW.Num_Adeli
     WHERE Id_Perso = :NEW.Id_Perso;
 END; 
 /
+----------------------------------------------------------------------------------------------------
 COMMIT
 -- prêt pour être testé 
 ---- 24 Mars 2026
+
+
 ---- 25 Mars 2026
 ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMPATIENT TO NUM_JOUR;
+---------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------A2_Calcul_NumLotMédoc codé par Antoisse--------------------------------------
 --Générer automatiquement NUMLOTS (par concaténation de l’ID_PATIENT et du numéro de jour) plutôt que de le saisir à la main.
 CREATE OR REPLACE TRIGGER trg_CalculNumLot  --pret a tester
 BEFORE INSERT ON LOT_MEDICAMENT 
@@ -79,8 +99,9 @@ END;
 /
 
 -- 27 Mars 2026
+---------------------------------------------------------------------------------------------------------------------------
 --Mise en place du cadre d'étude par création de centre, du personnel : Centre, Personnel, Perso_Med
--- P1_PeuplementDebut
+-----------------------------------P1_PeuplementCentre codé par Antoisse--------------------------------------
 CREATE OR REPLACE PROCEDURE PeupleCentre(n in number) as 
 BEGIN
     COMMIT;
@@ -94,12 +115,12 @@ END;
 --call
 call PeupleCentre(5);
 SELECT * FROM CENTRE;
-commit
+commit;
 
----------------------------------------------------------------------------------------------------------------------------------
---01 Avril 2026 (Développé par C)
+----------------------------------------Séquences de numérotation automatique------------------------------------------------
+--01 Avril 2026 (Développé par Caleb)
 -- Automatisation de la numérotation des tables dont l'identifiant peut être numéroté automatiquement à partir de 1 : 
--- creation d'une sequence de numérotation automatique pour le patient-------------------------------------------------
+-- creation d'une sequence de numérotation automatique pour le patient
 create sequence NumerotationPatientSeq 
     start with 1 increment by 1; -- Commence la numérotation à 1 mais pour tester on peut modifier le chiffre de départ
     
@@ -115,8 +136,7 @@ create sequence NumerotationPersonnelSeq
 create sequence NumerotationFicheQuotidienneSeq
     start with 1 increment by 1;
     
-drop sequence NumerotationPersonnelSeq;
-----------------------------Trigger d'automatisation de la numérotation du patient----------------------------------------------
+-----------------------------------A7_Automatisation de la numérotation du patient développée par Caleb-------------------------------------
 create or replace trigger trg_PatientAutoNum
 before insert on Patient
 for each row
@@ -126,8 +146,9 @@ begin
     end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Patient
+-----------------------------------------------------------------------------------------------------------------------------------------
 
-------------------------------------Trigger d'automatisation de la numérotation du centre---------------------------
+------------------------------------A10_Automatisation de la numérotation du centre développée par Caleb------------------------------
 create or replace trigger trg_CentreAutoNum
 before insert on Centre
 for each row
@@ -137,8 +158,9 @@ begin
     end if; 
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Centre
+------------------------------------------------------------------------------------------------------------------------------------------
 
---------------------------Trigger d'automatisation de la numérotation du Personnel 
+--------------------------------A11_Automatisation de la numérotation du personnel développé par Caleb------------------------------------ 
 create or replace trigger trg_PersonnelAutoNum
 before insert on Personnel
 for each row
@@ -149,8 +171,9 @@ begin
 end; 
 -- Pour tester il faut mettre un null à l'emplacement de Id_Perso
 /
+---------------------------------------------------------------------------------------------------------------------------------
 
---------------------------Trigger d'automatisation de la numérotation de la fiche quotidienne 
+--------------------------A12_Automatisation de la numérotation de la fiche quotidienne développée par Caleb-----------------------------
 create or replace trigger trg_FicheQuotidienneAutoNum
 before insert on FICHE_QUOTIDIENNE
 for each row
@@ -159,19 +182,20 @@ begin
         select NumerotationFicheQuotidienneSeq.nextval into :NEW.Num_F from dual; -- Insert la valeur à partir de la séquence de numérotation
     end if;
 end; 
--- Pour tester il faut mettre un null à l'emplacement de Id_Perso
+-- Pour tester il faut mettre un null à l'emplacement de Num_F
 /
 commit;
+----------------------------------------------------------------------------------------------------------------------------------
 
 ---------------------------------------------------------------------------------------------------------------------------------
 -- 03 Avril 2026
------------------------------------Procédure de peuplement du personnel (développé par C)----------------------------------------
+--------------------------------------------P3_PeuplementPersonnel (développé par Caleb)-----------------------------------------
 CREATE OR REPLACE PROCEDURE PeuplePersonnel (np IN NUMBER) AS
   TYPE t_roles IS VARRAY(7) OF VARCHAR2(30);
-  v_roles t_roles := t_roles('Medecin', 'Infirmiere', 'ARC', 'KINE', 'Cardiologue', 'Biologiste','Data-Manager');
+  v_roles t_roles := t_roles('Medecin', 'Infirmiere', 'ARC', 'KINE', 'Cardiologue', 'Biologiste','Data-Manager');-- les rôles possibles pour le personnel
 
-  TYPE t_centres IS VARRAY(4) OF NUMBER;
-  v_centres t_centres := t_centres(1, 2, 3, 4);
+  TYPE t_centres IS VARRAY(5) OF NUMBER;
+  v_centres t_centres := t_centres(1, 2, 3, 4,5); -- les centres possibles pour le personnel
 
   TYPE t_identites IS VARRAY(20) OF VARCHAR2(50);
   v_identites t_identites := t_identites(
@@ -180,17 +204,17 @@ CREATE OR REPLACE PROCEDURE PeuplePersonnel (np IN NUMBER) AS
     'Leroy Noah','Moreau Manon','Simon Louis','Laurent Sarah',
     'Lefebvre Jules','Michel Clara','Garcia Tom','David Camille',
     'Bertrand Lina','Roux Maxime','Vincent Zoé','Fournier Aymeric'
-  );
+  ); -- Liste d'identités pour le personnel (Format : Nom Prénom)
 
-  v_idCentre    NUMBER;
-  v_sonIdentite VARCHAR2(50);
-  v_metier      VARCHAR2(30);
-  v_index       PLS_INTEGER;
-  v_nb_arc_centre NUMBER;
+  v_idCentre    NUMBER; -- variable pour stocker le centre tiré aléatoirement
+  v_sonIdentite VARCHAR2(50); -- variable pour stocker l'identité tirée aléatoirement
+  v_metier      VARCHAR2(30); -- variable pour stocker le rôle tiré aléatoirement
+  v_index       PLS_INTEGER; -- variable pour stocker l'index aléatoire utilisé pour tirer les centres, identités et rôles
+  v_nb_arc_centre NUMBER; -- variable pour compter le nombre d'ARC ou Data-Manager déjà présents dans un centre
 BEGIN
   FOR i IN 1 .. np LOOP
     -- centre aléatoire
-    v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_centres.COUNT + 1));
+    v_index := TRUNC(DBMS_RANDOM.VALUE(1, v_centres.COUNT + 1)); -- génère un index aléatoire entre 1 et le nombre de centres disponibles
     v_idCentre := v_centres(v_index);
 
     -- identité aléatoire
@@ -228,10 +252,10 @@ END;
 SELECT NumerotationPersonnelSeq.NEXTVAL FROM dual; -- pour afficher le prochain numéro de l'ID_PERSO (num auto)
 
 -----Appel de la procédure----------
-call PeuplePersonnel(30); -- Insère 30 personnel
+call PeuplePersonnel(30); -- Doit insérer 30 personnel
 
 -- 03 Avril 2026
--------------------------------------------Procédure de nettoyage du personnel (développé par C)------------------------------------
+-------------------------------------------Procédure de nettoyage du personnel (développé par Caleb)------------------------------------
 -- Procedure permettant d'effacer le contenu à partir d'un nombre de départ 
 CREATE OR REPLACE PROCEDURE CleanPersonnel  (debut IN NUMBER, fin IN NUMBER) AS
     v_max Number; 
@@ -248,11 +272,12 @@ end;
 /
 commit;
 
-call CleanPersonnel (2,31);-- (Efface les personnel dont les identifiants sont compris entre 22 et 36,les deux inclus)
+call CleanPersonnel (2,31);-- (Efface les personnel dont les identifiants sont compris entre 2 et 31,les deux inclus)
 
 commit;
+--------------------------------------------------------------------------------------------------------------------------------
 
------------------------------------Procédure de peuplement du personnel médical (développé par C)----------------------------------------
+--------------------------------------------P4_Peuplement PersoMed (développée par Caleb)-----------------------------------------
 CREATE OR REPLACE PROCEDURE PeuplePersoMedical AS -- procédure qui peuple la table perso_med en récupérant les infos du personnel en fonction de son rôle
 BEGIN
   FOR p IN (SELECT ID_PERSO, NUM_ADELI, ROLE FROM   PERSONNEL WHERE  ROLE IN ('Medecin','Infirmiere','KINE','Cardiologue','Biologiste')) -- Pour chaque personnel qui a un rôle parmi Médecin, Infirmière, KINE, Cardiologue ou Biologiste, exécute les instructions du LOOP une fois avec ses données dans la variable p
@@ -262,11 +287,13 @@ BEGIN
       v_service VARCHAR2(100);
     BEGIN
       IF p.ROLE = 'Cardiologue' THEN
-        v_service := 'Test d''effort';
+        v_service := 'Electro-encéphalogramme';
       ELSIF p.ROLE = 'Biologiste' THEN
         v_service := 'Prise de sang et des résultats d''analyse';
-      ELSE
-        v_service := 'Electro-encéphalogramme';
+      ELSIF p.ROLE = 'KINE' THEN
+        v_service := 'Test d''effort';
+    ELSE
+        v_service := NULL; -- pour les rôles qui n'ont pas de service spécifique
       END IF;
 
       -- insertion dans PERSO_MED
@@ -278,9 +305,7 @@ END;
 /
 
 -- call
-call PeuplePersoMedical(); -- Appel de la procédure de peuplement du personnel médical
-
-Delete from Personnel;
+call PeuplePersoMedical(); -- Appel de la procédure de peuplement du personnel médical => doit insérer dans perso_med les personnels médicaux présents dans personnel
 
 ------------------ A faire ! pour pouvoir casser les clés étrangères en boucle qu'on avait et qui empêchait le nettoyage des tables-------------
 ALTER TABLE PERSONNEL

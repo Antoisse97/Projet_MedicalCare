@@ -374,3 +374,183 @@ BEGIN
   ROLLBACK;  -- on ne garde pas les données de test
 END;
 /
+
+----------------------Test de la procédure de peuplement du centre (Codée par Antoisse, testée par Caleb le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_PEUPLEMENT_CENTRE------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Nettoyage des données de test
+  DELETE FROM CENTRE;
+  COMMIT;
+  -- Appel de la procédure de peuplement du centre
+  PeupleCentre(5);  -- doit insérer 5 centres
+
+  -- Vérification du nombre de centres insérés
+  DECLARE
+    v_count NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO v_count FROM CENTRE;
+    IF v_count = 5 THEN
+      DBMS_OUTPUT.PUT_LINE('PeupleCentre - OK : 5 centres insérés comme attendu.');
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('PeupleCentre - ECHEC : ' || v_count || ' centres insérés au lieu de 5.');
+    END IF;
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
+/
+
+----------------------Test de la procédure de peuplement du personnel (Codée par Caleb, testée par Antoisse le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_PEUPLEMENT_PERSONNEL------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Nettoyage des données de test
+  DELETE FROM PERSONNEL ; -- on efface les personnels 
+  COMMIT;
+
+  -- Appel de la procédure de peuplement du personnel
+  PeuplePersonnel(30); -- doit insérer 30 personnels
+
+  -- Vérification du nombre de personnels insérés
+  DECLARE
+    v_count NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO v_count FROM PERSONNEL;
+    IF v_count = 30 THEN
+      DBMS_OUTPUT.PUT_LINE('PeuplePersonnel - OK : 30 personnels insérés comme attendu.');
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('PeuplePersonnel - ECHEC : ' || v_count || ' personnels insérés au lieu de 30.');
+    END IF;
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
+
+----------------------Test de la procédure de peuplement du personnel (Codée par Caleb, testée par Antoisse le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_PEUPLEMENT_PERSONNEL------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Nettoyage des données de test
+  DELETE FROM PERSONNEL ; -- on efface les personnels 
+  COMMIT;
+
+  -- Appel de la procédure de peuplement du personnel
+  PeuplePersonnel(30); -- doit insérer 30 personnels
+
+  -- Vérification du nombre de personnels insérés
+  DECLARE
+    v_count NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO v_count FROM PERSONNEL;
+    IF v_count = 30 THEN
+      DBMS_OUTPUT.PUT_LINE('PeuplePersonnel - OK : 30 personnels insérés comme attendu.');
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('PeuplePersonnel - ECHEC : ' || v_count || ' personnels insérés au lieu de 30.');
+    END IF;
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
+
+----------------------Test de la procédure de peuplement du personnel médical (Codée par Caleb, testée par Antoisse le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_PEUPLEMENT_PERSO_MED-----------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+
+  -- Nettoyage des données de test
+  DELETE FROM PERSO_MED; -- on efface les personnels médicaux
+  COMMIT;
+
+  -- Appel de la procédure de peuplement du personnel médical
+  PeuplePersoMedical(); -- doit insérer dans perso_med les personnels médicaux présents dans personnel
+
+  -- Vérification du nombre de personnels médicaux insérés
+  DECLARE
+    v_count NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO v_count FROM PERSO_MED;
+    IF v_count > 0 THEN
+      DBMS_OUTPUT.PUT_LINE('PeuplePersoMedical - OK : ' || v_count || ' personnels médicaux insérés comme attendu.');
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('PeuplePersoMedical - ECHEC : aucun personnel médical inséré alors qu''il aurait dû y en avoir.');
+    END IF;
+  END;
+
+  ROLLBACK;  -- on ne garde pas les données de test
+END;
+--------------------------------------------------------------------------------------------------------------------------------
+
+DELETE FROM PERSO_MED;
+
+CALL PeuplePersoMedical();
+
+INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
+VALUES (NULL, 1173, NULL, 2, 'Antoisse', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1');
+
+INSERT INTO PATIENT (ID_PATIENT, NUM_ADELI, LIGNE_DOSSIER, ID_CENTRE, NOM, TRAITEMENT, DATEDENAISSANCE, POIDS, TAILLE, IMC, SEXE, GROUPE, SOUS_GROUPE)
+VALUES (NULL, 1173, NULL, 2, 'Caleb', 'Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'), 60, 180, 30, 'H', 'VP', '1');
+
+
+----------------------Test du calcul du numéro de lot de médicament (Codée par Antoisse, testée par Caleb le 25/03/2026)--------------------
+
+--------------------------------------------------TEST_Calcul_NumLotMédoc-----------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Nettoyage
+  DELETE FROM LOT_MEDICAMENT WHERE ID_PATIENT IN (22, 23);
+  COMMIT;
+
+  ---------------------------------------------------------------------------
+  -- Préparation : une fiche quotidienne pour le patient 22 et aucune pour le patient 23
+  ---------------------------------------------------------------------------
+  INSERT INTO FICHE_QUOTIDIENNE VALUES (10, 22, 22, 10, 80, 180, 190, 37,'ok','ok',TO_DATE('08-04-2026','DD-MM-YYYY'));
+
+  ---------------------------------------------------------------------------
+  -- CAS 1 : patient 22 avec fiche existante -> doit ÊTRE ACCEPTÉ
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO LOT_MEDICAMENT (NUMLOTS, ID_PATIENT)
+    VALUES (NULL, 22);
+
+    DBMS_OUTPUT.PUT_LINE('A2 - OK   : lot médicament créé pour le patient 22.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('A2 - ECHEC : lot pour patient 22 refusé : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  ---------------------------------------------------------------------------
+  -- CAS 2 : patient 23 sans fiche quotidienne -> doit ÊTRE REFUSÉ
+  ---------------------------------------------------------------------------
+  BEGIN
+    INSERT INTO LOT_MEDICAMENT (NUMLOTS, ID_PATIENT)
+    VALUES (NULL, 23);
+
+    DBMS_OUTPUT.PUT_LINE('A2 - ECHEC : lot médicament créé pour patient 23 alors qu''il ne devait pas.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('A2 - OK   : refus attendu pour patient 23 : '
+                           || SQLCODE || ' - ' || SQLERRM);
+  END;
+
+  COMMIT;  
+END;
+/
+
+
+

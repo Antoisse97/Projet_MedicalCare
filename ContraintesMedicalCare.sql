@@ -31,34 +31,6 @@ end;
 /
 ------------------------------------------------------------------------------------------------
 
-------------------A5_UptadeNumDossier après saisit du patient (codée par Antoisse)------------------
---trigger uptade de patient après la saisit de son dossier
-CREATE OR REPLACE TRIGGER trg_uptadePatient_AprèsSaisitDossier
-AFTER INSERT 
-ON DOSSIER
-FOR EACH ROW 
-BEGIN
-    UPDATE PATIENT 
-    SET LIGNE_DOSSIER = :NEW.LIGNE_DOSSIER
-    WHERE ID_PATIENT = :NEW.ID_PATIENT;
-END;
-/
-----------------------------------------------------------------------------------------------------
--- Test ajout patient 
-
-Insert into centre values (1);
-Insert into personnel values (1,1,NULL,'François','Medecin');
-Update personnel set NUM_ADELI=2345 where ID_PERSO=1 ;
-Insert into perso_med values (2345,1,'Medecin',NULL);
-Insert into Patient values (1,2345,NULL,1,'Brice','Aucun', TO_DATE('05-03-2006','DD-MM-YYYY'),60,180,30,'H','VP',1); --doit fonctionner
-
---test mise a jour dossier patient antoisse
-Insert into Patient values (4,2345,NULL,1,'Caleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-INSERT INTO DOSSIER VALUES (4, 4, 'Neurochirurgie'); 
-
-Insert into Patient values (5,2345,NULL,1,'Ccaleb','Aucun', TO_DATE('05-03-2010','DD-MM-YYYY'),60,180,30,'H','VP',1); -- doit fonctionner 
-INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie'); 
-
 
 -------------------Contraintes C1_AgeInclusion codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER check_Age_Inclusion
@@ -81,61 +53,10 @@ END;
 COMMIT;
 ----------------------------------------------------------------------------------------------------
 
-
-------------------A1_Calcul_NumAdéli codé par Antoisse--------------------------------------
-CREATE OR REPLACE TRIGGER trg_adeli_medecin
-BEFORE INSERT ON PERSO_MED
-FOR EACH ROW
-DECLARE
-    v_role PERSONNEL.role%type;
-    v_base NUMBER;
-BEGIN 
--- récupération du role du personnage 
-    SELECT ROLE
-    INTO v_role
-    FROM PERSONNEL
-    WHERE ID_PERSO = :NEW.ID_PERSO;
--- base selon le role 
-    IF v_role = 'Medecin' THEN
-        v_base :=1000;
-    ELSIF v_role = 'Infirmiere' THEN 
-        v_base :=2000;
-    ELSIF v_role = 'Cardiologue' THEN 
-        v_base :=3000;
-    ELSIF v_role = 'KINE' THEN 
-        v_base :=4000;
-    ELSIF v_role = 'Biologiste' THEN 
-        v_base :=5000;
-    ELSE 
-        v_base := 9000; --valeur default
-        RAISE_APPLICATION_ERROR(-20010, 'La personne n''est pas un personnel medical');
-    END IF; 
--- calcul du num adeli 
-    :NEW.NUM_ADELI := v_base + :NEW.ID_PERSO;
-END;
-/
-COMMIT;
-----------------------------------------------------------------------------------------------------
-
-
---------------- A6_Uptade_NumAdéli codé par Antoisse--------------------------------------
---trigger uptade numéro adéli  -> Perso_Med après la saisit d'un Personnel
-CREATE OR REPLACE TRIGGER trg_uptadePerso_Med_aprèsSaisitPersonnel
-AFTER INSERT 
-ON PERSO_MED 
-FOR EACH ROW 
-BEGIN 
-    UPDATE PERSONNEL 
-    SET Num_Adeli = :NEW.Num_Adeli
-    WHERE Id_Perso = :NEW.Id_Perso;
-END; 
-/
-----------------------------------------------------------------------------------------------------
-
 Drop trigger TRG_UPTADEPERSO_MED_APRÈSSAISITPERSONNEL;
 -- prêt pour être testé 
 COMMIT;
-
+-------------------------------------------------------------------------------------------------------
 
 ------------ -----------C6_CohérencePatientCentre codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER CHECK_PATIENT_CENTRE_FIXE
@@ -160,7 +81,7 @@ INSERT INTO DOSSIER VALUES (5, 5, 'Neurochirurgie');
 Update PATIENT set ID_CENTRE = 2 where ID_PATIENT=5 ; -- fonctionne  
 -- Validé
 COMMIT;
-
+-----------------------------------------------------------------------------------------------------
 
 ------------ ----------- C7_CohérenceMédPatient codée par Caleb--------------------------------------
 CREATE OR REPLACE TRIGGER CHECK_MED_PATIENT_CENTRE
@@ -175,7 +96,7 @@ BEGIN
     -- On vérifie que le médecin référent est bien rattaché à ce centre
     SELECT COUNT(*)
       INTO est_present
-      FROM PERSO_MED pm --varible utilisé pour les joins
+      FROM PERSO_MED pm --varible utilisé pour les jointures entre les tables perso_med et personnel
            JOIN PERSONNEL p
              ON pm.ID_PERSO = p.ID_PERSO
      WHERE pm.NUM_ADELI = :NEW.NUM_ADELI
@@ -194,8 +115,7 @@ COMMIT
 -- Pour le test on est censé avoir une non insertion du nouveau patient avec le message d'erreur: 'Le médecin référent n'est pas rattaché au centre du patient : affectation refusée'
 ----------------------------------------------------------------------------------------------------
 
-
------------- ----------- C8_UneFicheParJour codée par Caleb--------------------------------------
+------------ ----------- C8_UneFicheParJour codée par Caleb-----------------------------------------
 -- Tester l'insertion d'une fiche quotidienne
 -- Trigger pour éviter d'avoir un doublon de fiche pour le même patient dans la même journée
 CREATE OR REPLACE TRIGGER CHECK_UNE_FICHE_JOUR_PAR_PATIENT
@@ -220,9 +140,9 @@ ALTER TABLE FICHE_QUOTIDIENNE RENAME COLUMN NUMJ TO NUM_F;
 ----------------------------------------------------------------------------------------------------
 
 
----- 24 Mars 2026
---trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (NUMJ) 
-
+------------------------------------------- 24 Mars 2026----------------------------------------------------
+--trigger pour Vérifier que DATEPRESCRIPTION et DATEREALISATION sont cohérentes avec la date/jour d’étude correspondant (DATEJ) 
+---------------------------C9_CohérenceExamAvecJour codée par Antoisse--------------------------------------
 CREATE OR REPLACE TRIGGER Check_ExamCoherentAvecJour
 BEFORE INSERT ON FICHE_EXAM
 FOR EACH ROW
